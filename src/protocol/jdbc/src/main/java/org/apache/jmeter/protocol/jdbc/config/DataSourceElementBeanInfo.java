@@ -50,7 +50,7 @@ public class DataSourceElementBeanInfo extends BeanInfoSupport {
         createPropertyGroup("varName", new String[] { "dataSource" });
 
         createPropertyGroup("pool", new String[] { "poolMax", "timeout",
-                "trimInterval", "autocommit", "transactionIsolation", "preinit", "initQuery" });
+                "trimInterval", "autocommit", "transactionIsolation", "poolPreparedStatements", "preinit", "initQuery" });
 
         createPropertyGroup("keep-alive", new String[] { "keepAlive", "connectionAge", "checkQuery" });
 
@@ -78,6 +78,10 @@ public class DataSourceElementBeanInfo extends BeanInfoSupport {
         Set<String> modesSet = TRANSACTION_ISOLATION_MAP.keySet();
         String[] modes = modesSet.toArray(new String[modesSet.size()]);
         p.setValue(TAGS, modes);
+        p = property("poolPreparedStatements");
+        p.setValue(NOT_UNDEFINED, Boolean.TRUE);
+        p.setValue(DEFAULT_NOT_SAVED, Boolean.TRUE);
+        p.setValue(DEFAULT, "-1");
         p = property("preinit");
         p.setValue(NOT_UNDEFINED, Boolean.TRUE);
         p.setValue(DEFAULT, Boolean.FALSE);
@@ -146,7 +150,7 @@ public class DataSourceElementBeanInfo extends BeanInfoSupport {
      * Get the list of JDBC driver classname for the main databases
      * @return a String[] with the list of JDBC driver classname
      */
-    private String[] getListJDBCDriverClass() {
+    private static String[] getListJDBCDriverClass() {
         return JOrphanUtils.split(JMeterUtils.getPropDefault("jdbc.config.jdbc.driver.class", ""), "|"); //$NON-NLS-1$
     }
 
@@ -155,7 +159,7 @@ public class DataSourceElementBeanInfo extends BeanInfoSupport {
      * Based in https://stackoverflow.com/questions/10684244/dbcp-validationquery-for-different-databases
      * @return a String[] with the list of check queries
      */
-    private String[] getListCheckQuery() {
+    private static String[] getListCheckQuery() {
         return JOrphanUtils.split(JMeterUtils.getPropDefault("jdbc.config.check.query", ""), "|"); //$NON-NLS-1$
     }
 

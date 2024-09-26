@@ -24,6 +24,7 @@ import java.util.Map;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.jmeter.control.TransactionController;
+import org.apache.jmeter.report.processor.DescriptiveStatisticsFactory;
 import org.apache.jmeter.samplers.SampleResult;
 import org.apache.jmeter.util.JMeterUtils;
 import org.apache.jorphan.documentation.VisibleForTesting;
@@ -41,27 +42,27 @@ public class SamplerMetric {
     /**
      * Response times for OK samples
      */
-    private DescriptiveStatistics okResponsesStats = new DescriptiveStatistics(LARGE_SLIDING_WINDOW_SIZE);
+    private final DescriptiveStatistics okResponsesStats = DescriptiveStatisticsFactory.createDescriptiveStatistics(LARGE_SLIDING_WINDOW_SIZE);
     /**
      * Response times for KO samples
      */
-    private DescriptiveStatistics koResponsesStats = new DescriptiveStatistics(LARGE_SLIDING_WINDOW_SIZE);
+    private final DescriptiveStatistics koResponsesStats = DescriptiveStatisticsFactory.createDescriptiveStatistics(LARGE_SLIDING_WINDOW_SIZE);
     /**
      * Response times for All samples
      */
-    private DescriptiveStatistics allResponsesStats = new DescriptiveStatistics(LARGE_SLIDING_WINDOW_SIZE);
+    private final DescriptiveStatistics allResponsesStats = DescriptiveStatisticsFactory.createDescriptiveStatistics(LARGE_SLIDING_WINDOW_SIZE);
     /**
      *  OK, KO, ALL stats
      */
-    private List<DescriptiveStatistics> windowedStats = initWindowedStats();
+    private final List<DescriptiveStatistics> windowedStats = initWindowedStats();
     /**
      * Timeboxed percentiles don't makes sense
      */
-    private DescriptiveStatistics pctResponseStats = new DescriptiveStatistics(SLIDING_WINDOW_SIZE);
+    private final DescriptiveStatistics pctResponseStats = DescriptiveStatisticsFactory.createDescriptiveStatistics(SLIDING_WINDOW_SIZE);
     private int successes;
     private int failures;
     private int hits;
-    private Map<ErrorMetric, Integer> errors = new HashMap<>();
+    private final Map<ErrorMetric, Integer> errors = new HashMap<>();
     private long sentBytes;
     private long receivedBytes;
 
@@ -126,14 +127,14 @@ public class SamplerMetric {
             errors.put(error, errors.getOrDefault(error, 0) + result.getErrorCount() );
         }
         long time = result.getTime();
-        allResponsesStats.addValue(time);
-        pctResponseStats.addValue(time);
+        allResponsesStats.addValue((double) time);
+        pctResponseStats.addValue((double) time);
         if(result.isSuccessful()) {
             // Should we also compute KO , all response time ?
             // only take successful requests for time computing
-            okResponsesStats.addValue(time);
+            okResponsesStats.addValue((double) time);
         }else {
-            koResponsesStats.addValue(time);
+            koResponsesStats.addValue((double) time);
         }
         addHits(result, isCumulated);
         addNetworkData(result, isCumulated);
@@ -186,8 +187,6 @@ public class SamplerMetric {
                 stat.clear();
             }
             break;
-        default:
-            // This cannot happen
         }
         errors.clear();
         successes = 0;

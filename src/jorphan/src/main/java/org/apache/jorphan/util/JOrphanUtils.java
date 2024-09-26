@@ -493,20 +493,21 @@ public final class JOrphanUtils {
     public static void displayThreads(boolean includeDaemons) {
         Map<Thread, StackTraceElement[]> m = Thread.getAllStackTraces();
         String lineSeparator = System.getProperty("line.separator");
+        StringBuilder builder = new StringBuilder();
         for (Map.Entry<Thread, StackTraceElement[]> e : m.entrySet()) {
             boolean daemon = e.getKey().isDaemon();
             if (includeDaemons || !daemon) {
-                StringBuilder builder = new StringBuilder();
+                builder.setLength(0);
+                builder.append(e.getKey());
+                if (daemon) {
+                    builder.append(" (daemon)");
+                }
+                builder.append(lineSeparator);
                 StackTraceElement[] ste = e.getValue();
                 for (StackTraceElement stackTraceElement : ste) {
-                    int lineNumber = stackTraceElement.getLineNumber();
-                    builder.append(stackTraceElement.getClassName())
-                            .append("#")
-                            .append(stackTraceElement.getMethodName())
-                            .append(lineNumber >= 0 ? " at line:" + stackTraceElement.getLineNumber() : "")
-                            .append(lineSeparator);
+                    builder.append("  at ").append(stackTraceElement).append(lineSeparator);
                 }
-                System.out.println(e.getKey().toString() + (daemon ? " (daemon)" : "") + ", stackTrace:" + builder.toString());
+                System.out.println(builder);
             }
         }
     }
@@ -717,7 +718,7 @@ public final class JOrphanUtils {
      * @param setter        that gets called with the replaced value
      * @return number of matches that were replaced
      */
-    public static int replaceValue(String regex, String replaceBy, boolean caseSensitive, String value, Consumer<String> setter) {
+    public static int replaceValue(String regex, String replaceBy, boolean caseSensitive, String value, Consumer<? super String> setter) {
         if (StringUtils.isBlank(value)) {
             return 0;
         }

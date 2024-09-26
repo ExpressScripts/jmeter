@@ -59,6 +59,7 @@ import org.apache.jorphan.util.JMeterError;
 import org.apache.jorphan.util.JMeterStopTestException;
 import org.apache.jorphan.util.JMeterStopTestNowException;
 import org.apache.jorphan.util.JMeterStopThreadException;
+import org.apiguardian.api.API;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -170,8 +171,19 @@ public class JMeterThread implements Runnable, Interruptible {
         this.isSameUserOnNextIteration = isSameUserOnNextIteration;
     }
 
+    @Deprecated
+    @API(status = API.Status.DEPRECATED, since = "5.5")
     public void setInitialContext(JMeterContext context) {
-        threadVars.putAll(context.getVariables());
+        putVariables(context.getVariables());
+    }
+
+    /**
+     * Updates the variables with all entries found in the variables in {@code vars}
+     * @param variables {@link JMeterVariables} with the entries to be updated
+     */
+    @API(status = API.Status.STABLE, since = "5.5")
+    public void putVariables(JMeterVariables variables) {
+        threadVars.putAll(variables);
     }
 
     /**
@@ -341,7 +353,7 @@ public class JMeterThread implements Runnable, Interruptible {
      * @param consumer Consumer that will process the tree of elements up to root node
      */
     private void triggerLoopLogicalActionOnParentControllers(Sampler sampler, JMeterContext threadContext,
-            Consumer<FindTestElementsUpToRootTraverser> consumer) {
+            Consumer<? super FindTestElementsUpToRootTraverser> consumer) {
         TransactionSampler transactionSampler = null;
         if (sampler instanceof TransactionSampler) {
             transactionSampler = (TransactionSampler) sampler;
@@ -434,7 +446,7 @@ public class JMeterThread implements Runnable, Interruptible {
      * the following method will try to find the sampler that really generate an error
      * @return {@link Sampler}
      */
-    private Sampler findRealSampler(Sampler sampler) {
+    private static Sampler findRealSampler(Sampler sampler) {
         Sampler realSampler = sampler;
         while (realSampler instanceof TransactionSampler) {
             realSampler = ((TransactionSampler) realSampler).getSubSampler();
@@ -587,6 +599,7 @@ public class JMeterThread implements Runnable, Interruptible {
                 // This call is done by checkAssertions() , as we don't call it
                 // for isIgnore, we explictely call it here
                 setLastSampleOk(threadContext.getVariables(), result.isSuccessful());
+                compiler.done(pack);
             }
             // Check if thread or test should be stopped
             if (result.isStopThread() || (!result.isSuccessful() && onErrorStopThread)) {
@@ -621,7 +634,7 @@ public class JMeterThread implements Runnable, Interruptible {
      */
     private SampleResult doSampling(JMeterContext threadContext, Sampler sampler) {
         sampler.setThreadContext(threadContext);
-        sampler.setThreadName(threadName);
+        setSamplerThreadName(sampler);
         TestBeanHelper.prepare(sampler);
 
         // Perform the actual sample
@@ -644,6 +657,11 @@ public class JMeterThread implements Runnable, Interruptible {
             }
             currentSamplerForInterruption = null;
         }
+    }
+
+    @SuppressWarnings("deprecation")
+    private void setSamplerThreadName(Sampler sampler) {
+        sampler.setThreadName(threadName);
     }
 
     private SampleResult doEndTransactionSampler(
@@ -672,7 +690,7 @@ public class JMeterThread implements Runnable, Interruptible {
      * @param transactionSampler
      * @return the listeners who should receive the sample result
      */
-    private List<SampleListener> getSampleListeners(SamplePackage samplePack, SamplePackage transactionPack, TransactionSampler transactionSampler) {
+    private static List<SampleListener> getSampleListeners(SamplePackage samplePack, SamplePackage transactionPack, TransactionSampler transactionSampler) {
         List<SampleListener> sampleListeners = samplePack.getSampleListeners();
         // Do not send subsamples to listeners which receive the transaction sample
         if(transactionSampler != null) {
@@ -700,7 +718,7 @@ public class JMeterThread implements Runnable, Interruptible {
     /**
      * Store {@link JMeterThread#LAST_SAMPLE_OK} in JMeter Variables context
      */
-    private void setLastSampleOk(JMeterVariables variables, boolean value) {
+    private static void setLastSampleOk(JMeterVariables variables, boolean value) {
         variables.put(LAST_SAMPLE_OK, Boolean.toString(value));
     }
 
@@ -881,7 +899,7 @@ public class JMeterThread implements Runnable, Interruptible {
         log.info("Stop Thread detected by thread: {}", threadName);
     }
 
-    private void checkAssertions(List<Assertion> assertions, SampleResult parent, JMeterContext threadContext) {
+    private static void checkAssertions(List<? extends Assertion> assertions, SampleResult parent, JMeterContext threadContext) {
         for (Assertion assertion : assertions) {
             TestBeanHelper.prepare((TestElement) assertion);
             if (assertion instanceof AbstractScopedAssertion) {
@@ -903,7 +921,7 @@ public class JMeterThread implements Runnable, Interruptible {
         setLastSampleOk(threadContext.getVariables(), parent.isSuccessful());
     }
 
-    private void recurseAssertionChecks(SampleResult parent, Assertion assertion, int level) {
+    private static void recurseAssertionChecks(SampleResult parent, Assertion assertion, int level) {
         if (level < 0) {
             return;
         }
@@ -925,7 +943,7 @@ public class JMeterThread implements Runnable, Interruptible {
         }
     }
 
-    private void processAssertion(SampleResult result, Assertion assertion) {
+    private static void processAssertion(SampleResult result, Assertion assertion) {
         AssertionResult assertionResult;
         try {
             assertionResult = assertion.getResult(result);
@@ -949,14 +967,14 @@ public class JMeterThread implements Runnable, Interruptible {
         result.addAssertionResult(assertionResult);
     }
 
-    private void runPostProcessors(List<PostProcessor> extractors) {
+    private static void runPostProcessors(List<? extends PostProcessor> extractors) {
         for (PostProcessor ex : extractors) {
             TestBeanHelper.prepare((TestElement) ex);
             ex.process();
         }
     }
 
-    private void runPreProcessors(List<PreProcessor> preProcessors) {
+    private static void runPreProcessors(List<? extends PreProcessor> preProcessors) {
         for (PreProcessor ex : preProcessors) {
             if (log.isDebugEnabled()) {
                 log.debug("Running preprocessor: {}", ((AbstractTestElement) ex).getName());
@@ -975,7 +993,7 @@ public class JMeterThread implements Runnable, Interruptible {
      *
      * @param timers to be used for calculating the delay
      */
-    private void delay(List<Timer> timers) {
+    private void delay(List<? extends Timer> timers) {
         long totalDelay = 0;
         for (Timer timer : timers) {
             TestBeanHelper.prepare((TestElement) timer);

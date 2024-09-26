@@ -21,10 +21,15 @@ Useful commands (`gw` comes from https://github.com/dougborg/gdub, otherwise `./
       # Different tasks for current module
       gw tasks
 
+## List available build parameters
+
+      # List all build parameters
+      gw parameters
+
 ## Cleaning build directories
 
 Technically `clean` should not be required, every time it is required it might be a bug.
-However it might be useful to perform a "clean" build:
+However, it might be useful to perform a "clean" build:
 
       # Cleans current project (submodule)
       gw clean
@@ -118,10 +123,10 @@ build only the required jars and files.
 ## Coverage
 
       # Generates code coverage report for the test task to build/reports/jacoco/test/html
-      gw jacocoTestReport
+      gw jacocoTestReport -Pcoverage
 
       # Generate combined coverage report
-      gw jacocoReport
+      gw jacocoReport -Pcoverage
 
 ## Generate Javadocs
 
@@ -162,7 +167,7 @@ so it is done automatically provided credentials are specified via
       # Signs all the artifacts of the current module
       # see results in build/**/*.asc
       gw sign
-> **Note:** signing is performed as a part of *release artifact build* so it will be
+> **Note:** signing is performed as a part of *release artifact build*, so it will be
 > performed with `gw :src:dist:assemble`
 
 ## Releasing

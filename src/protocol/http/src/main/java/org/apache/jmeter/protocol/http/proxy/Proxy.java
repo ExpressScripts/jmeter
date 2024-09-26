@@ -89,6 +89,12 @@ public class Proxy extends Thread {
     private static final String SSLCONTEXT_PROTOCOL =
         JMeterUtils.getPropDefault("proxy.ssl.protocol", "TLS"); // $NON-NLS-1$ $NON-NLS-2$
 
+    private static final String[] SOCKET_PROTOCOL_ARRAY =
+            JMeterUtils.getArrayPropDefault("https.socket.protocols", null); // $NON-NLS-1$
+
+    private static final String[] SUPPORTED_CIPHER_ARRAY =
+            JMeterUtils.getArrayPropDefault("https.cipherSuites", null); // $NON-NLS-1$
+
     // HashMap to save ssl connection between Jmeter proxy and browser
     private static final HashMap<String, SSLSocketFactory> HOST2SSL_SOCK_FAC = new HashMap<>();
 
@@ -398,7 +404,7 @@ public class Proxy extends Thread {
      * @return the keystore entry or {@code null} if no match found
      * @throws KeyStoreException
      */
-    private String getDomainMatch(KeyStore keyStore, String host) throws KeyStoreException {
+    private static String getDomainMatch(KeyStore keyStore, String host) throws KeyStoreException {
         if (keyStore.containsAlias(host)) {
             return host;
         }
@@ -453,6 +459,12 @@ public class Proxy extends Thread {
                 secureSocket = (SSLSocket) sslFactory.createSocket(sock,
                         sock.getInetAddress().getHostName(), sock.getPort(), true);
                 secureSocket.setUseClientMode(false);
+                if (SUPPORTED_CIPHER_ARRAY != null) {
+                    secureSocket.setEnabledCipherSuites(SUPPORTED_CIPHER_ARRAY);
+                }
+                if (SOCKET_PROTOCOL_ARRAY != null) {
+                    secureSocket.setEnabledProtocols(SOCKET_PROTOCOL_ARRAY);
+                }
                 if (log.isDebugEnabled()){
                     log.debug("{} SSL transaction ok with cipher: {}", port, secureSocket.getSession().getCipherSuite());
                 }
@@ -467,7 +479,7 @@ public class Proxy extends Thread {
         }
     }
 
-    private SampleResult generateErrorResult(SampleResult result, HttpRequestHdr request, Exception e) {
+    private static SampleResult generateErrorResult(SampleResult result, HttpRequestHdr request, Exception e) {
         return generateErrorResult(result, request, e, "");
     }
 
@@ -525,7 +537,7 @@ public class Proxy extends Thread {
      *
      * @return updated headers to be sent to client
      */
-    private String messageResponseHeaders(SampleResult res) {
+    private static String messageResponseHeaders(SampleResult res) {
         String headers = res.getResponseHeaders();
         String[] headerLines = headers.split(NEW_LINE, 0); // drop empty trailing content
         int contentLengthIndex = -1;
@@ -635,7 +647,7 @@ public class Proxy extends Thread {
         }
     }
 
-    private boolean isNotHtmlType(String contentType) {
+    private static boolean isNotHtmlType(String contentType) {
         for (String mimeType: NOT_HTML_TEXT_TYPES) {
             if (contentType.startsWith(mimeType)) {
                 return true;
@@ -644,7 +656,7 @@ public class Proxy extends Thread {
         return false;
     }
 
-    private String getUrlWithoutQuery(URL url) {
+    private static String getUrlWithoutQuery(URL url) {
         String fullUrl = url.toString();
         String urlWithoutQuery = fullUrl;
         String query = url.getQuery();

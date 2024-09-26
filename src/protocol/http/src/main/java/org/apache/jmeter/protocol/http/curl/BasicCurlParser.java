@@ -126,7 +126,7 @@ public class BasicCurlParser {
     public static final class Request {
         private boolean compressed;
         private String url;
-        private List<Pair<String, String>> headers = new ArrayList<>();
+        private final List<Pair<String, String>> headers = new ArrayList<>();
         private String method = "GET";
         private String postData;
         private String interfaceName;
@@ -134,17 +134,17 @@ public class BasicCurlParser {
         private String cookies = "";
         private String cookieInHeaders = "";
         private String filepathCookie="";
-        private Authorization authorization = new Authorization();
+        private final Authorization authorization = new Authorization();
         private String caCert = "";
-        private List<Pair<String, ArgumentHolder>> formData = new ArrayList<>();
-        private List<Pair<String, String>> formStringData = new ArrayList<>();
-        private Set<String> dnsServers = new HashSet<>();
+        private final List<Pair<String, ArgumentHolder>> formData = new ArrayList<>();
+        private final List<Pair<String, String>> formStringData = new ArrayList<>();
+        private final Set<String> dnsServers = new HashSet<>();
         private boolean isKeepAlive = true;
         private double maxTime = -1;
-        private List<String> optionsIgnored = new ArrayList<>();
-        private List<String> optionsNoSupport = new ArrayList<>();
-        private List<String> optionsInProperties = new ArrayList<>();
-        private Map<String, String> proxyServer = new LinkedHashMap<>();
+        private final List<String> optionsIgnored = new ArrayList<>();
+        private final List<String> optionsNoSupport = new ArrayList<>();
+        private final List<String> optionsInProperties = new ArrayList<>();
+        private final Map<String, String> proxyServer = new LinkedHashMap<>();
         private String dnsResolver;
         private int limitRate = 0;
         private String noproxy;
@@ -285,8 +285,8 @@ public class BasicCurlParser {
          * @param limitRate the maximum transfer rate
          */
         public void setLimitRate(String limitRate) {
-            String unit = limitRate.substring(limitRate.length() - 1, limitRate.length()).toLowerCase();
-            int value = Integer.parseInt(limitRate.substring(0, limitRate.length() - 1).toLowerCase());
+            String unit = limitRate.substring(limitRate.length() - 1, limitRate.length()).toLowerCase(Locale.ROOT);
+            int value = Integer.parseInt(limitRate.substring(0, limitRate.length() - 1).toLowerCase(Locale.ROOT));
             switch (unit) {
             case "k":
                 this.limitRate = value * ONE_KILOBYTE_IN_CPS;
@@ -561,7 +561,7 @@ public class BasicCurlParser {
     private static final CLOptionDescriptor D_DATA_BINARY_OPT = new CLOptionDescriptor("data-binary",
             CLOptionDescriptor.ARGUMENT_REQUIRED, DATA_BINARY_OPT, "HTTP POST binary data ");
     private static final CLOptionDescriptor D_DATA_URLENCODE_OPT = new CLOptionDescriptor("data-urlencode",
-            CLOptionDescriptor.ARGUMENT_REQUIRED, DATA_URLENCODE_OPT, "HTTP POST url encoding data ");
+            CLOptionDescriptor.ARGUMENT_REQUIRED | CLOptionDescriptor.DUPLICATES_ALLOWED, DATA_URLENCODE_OPT, "HTTP POST url encoding data ");
     private static final CLOptionDescriptor D_DATA_RAW_OPT = new CLOptionDescriptor("data-raw",
             CLOptionDescriptor.ARGUMENT_REQUIRED, DATA_RAW_OPT, "HTTP POST url allowed '@' ");
     private static final CLOptionDescriptor D_FORM_OPT = new CLOptionDescriptor("form",
@@ -718,6 +718,9 @@ public class BasicCurlParser {
                 } else if (DATAS_OPT.contains(option.getDescriptor().getId())) {
                     String value = option.getArgument(0);
                     String dataOptionName = option.getDescriptor().getName();
+                    if (value == null) {
+                        value = "";
+                    }
                     value = getPostDataByDifferentOption(value.trim(), dataOptionName);
                     if ("GET".equals(request.getMethod())) {
                         request.setMethod("POST");
@@ -910,8 +913,8 @@ public class BasicCurlParser {
     * @param mechanism     the mechanism of authorization
     * @param authorization the object of authorization
     */
-   private void setAuthMechanism(String mechanism, Authorization authorization) {
-       switch (mechanism.toLowerCase()) {
+   private static void setAuthMechanism(String mechanism, Authorization authorization) {
+       switch (mechanism.toLowerCase(Locale.ROOT)) {
        case "basic":
            authorization.setMechanism(Mechanism.BASIC);
            break;
@@ -929,7 +932,7 @@ public class BasicCurlParser {
     * @param request                       http request
     * @param originalProxyServerParameters the parameters of proxy server
     */
-   private void setProxyServer(Request request, String originalProxyServerParameters) {
+   private static void setProxyServer(Request request, String originalProxyServerParameters) {
        String proxyServerParameters = originalProxyServerParameters;
        if (!proxyServerParameters.contains("://")) {
            proxyServerParameters = "http://" + proxyServerParameters;
@@ -957,7 +960,7 @@ public class BasicCurlParser {
     * @param request               http request
     * @param authentication        the username and password of proxy server
     */
-   private void setProxyServerUserInfo(Request request, String authentication) {
+   private static void setProxyServerUserInfo(Request request, String authentication) {
        if (authentication.contains(":")) {
            String[] userInfo = authentication.split(":", 2);
            request.setProxyServer("username", userInfo[0]);
